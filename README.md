@@ -2,7 +2,7 @@
 
 A backend service that powers the "nearby vehicles" map experience. Given a rider's location, it returns available Bird vehicles within a search radius, backed by PostGIS for geospatial queries.
 
-![Demo](demo.gif)
+![Demo](images/demo.gif)
 
 ---
 
@@ -123,6 +123,18 @@ This repository implements the **Read Path Search Service** as described above, 
 - **Micrometer + Prometheus** — request latency histograms, counters, and custom metrics.
 - **Structured JSON logging** — via Logstash Logback encoder.
 - **Testcontainers** — integration tests against a real PostGIS instance.
+
+### Spring context and beans
+
+Your IDE’s Spring tooling can show how the app is wired at runtime. The **application context** view lists the main `@SpringBootApplication` and the configuration, web, service, repository, and support beans it loads. The **bean graph** adds dependency edges: constructor injection, `@Bean` methods (for example `MetricsConfig` defining `commonTags`), and shared beans such as `JdbcTemplate` and Micrometer’s `CompositeMeterRegistry`.
+
+**Application context** (components under `NearbyBirdsApplication`):
+
+![Spring application context overview](images/context.png)
+
+**Bean dependency graph** (`depends on` and `@Bean` relationships):
+
+![Spring bean dependency graph](images/beans.png)
 
 ### Prerequisites
 
