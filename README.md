@@ -2,6 +2,8 @@
 
 A backend service that powers the "nearby vehicles" map experience. Given a rider's location, it returns available Bird vehicles within a search radius, backed by PostGIS for geospatial queries.
 
+![Demo](demo.gif)
+
 ---
 
 ## Part 1: System Architecture
@@ -91,16 +93,19 @@ A "ghost" vehicle appears on the map but isn't actually available when the rider
 ### Observability Strategy
 
 **Metrics (Micrometer → Prometheus → Grafana):**
+
 - `search.requests` — counter, tagged by city and status code.
 - `search.latency` — histogram of end-to-end response times.
 - `vehicles.active` — gauge per city of vehicles passing the availability filter.
 - `vehicles.ghost_filtered` — counter of vehicles excluded by ghost filtering, tagged by reason.
 
 **Structured logging (JSON via Logstash encoder):**
+
 - Every request logs: `request_id`, `city`, `lat/lng`, `radius`, `result_count`, `duration_ms`.
 - Errors include full context for triage without needing to reproduce.
 
 **Alerting:**
+
 - P99 latency > 100ms → page.
 - Ghost filter rate > 30% in a city → warning (may indicate a fleet-wide issue).
 - Redis connection failures → readiness probe fails, traffic shifts.
@@ -152,7 +157,7 @@ Use `make help` for other Compose, Docker, and Gradle targets.
 
 #### Search Nearby Vehicles
 
-```
+```markdown
 GET /api/v1/vehicles/nearby?lat={latitude}&lng={longitude}&radius={meters}&limit={max_results}
 ```
 
@@ -165,6 +170,7 @@ GET /api/v1/vehicles/nearby?lat={latitude}&lng={longitude}&radius={meters}&limit
 | `limit` | int | no | 20 | Max results (1–100) |
 
 **Response (200 OK):**
+
 ```json
 {
   "vehicles": [
@@ -186,7 +192,7 @@ GET /api/v1/vehicles/nearby?lat={latitude}&lng={longitude}&radius={meters}&limit
 
 #### Health Checks
 
-```
+```markdown
 GET /actuator/health/liveness    → 200 if process is alive
 GET /actuator/health/readiness   → 200 if database is reachable
 GET /actuator/health             → combined health status
@@ -194,11 +200,12 @@ GET /actuator/health             → combined health status
 
 #### Metrics
 
-```
+```markdown
 GET /actuator/prometheus          → Prometheus-format metrics
 ```
 
 Key metrics exposed:
+
 - `nearby_search_requests_total` — counter by status
 - `nearby_search_latency_seconds` — histogram
 - `nearby_search_results_count` — distribution summary of result set sizes
@@ -282,7 +289,7 @@ If `curl` reports **“Empty reply from server”**, confirm only your Spring Bo
 
 ### Project Structure
 
-```
+```bash
 src/main/kotlin/com/nearbybirds/
 ├── NearbyBirdsApplication.kt          # Entry point
 ├── config/
