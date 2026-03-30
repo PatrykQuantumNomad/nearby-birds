@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: nearby-birds
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/nearby_birds
+    username: birds
+    # Match secrets/postgres_password when using Docker Compose; override with SPRING_DATASOURCE_PASSWORD.
+    password: ${SPRING_DATASOURCE_PASSWORD:birds_secret}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus,info
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
+
+server:
+  port: 8080
+
+logging:
+  level:
+    com.nearbybirds: DEBUG
+    org.hibernate.SQL: WARN

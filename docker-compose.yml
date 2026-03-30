@@ -1,0 +1,131 @@
+name: nearby-birds
+
+# Two ways to work:
+#
+# 1) Local JVM (usual dev) — only Postgres in Docker, run the API with Gradle:
+#      docker compose up -d postgres
+#      ./gradlew bootRun
+#    A plain `docker compose up -d` does the same: the `app` service is opt-in.
+#
+# 2) Fully containerized — builds the Spring Boot image and runs API + PostGIS:
+#      docker compose --profile containerized up -d --build
+#
+# The `containerized` profile keeps `docker compose up` from building or starting
+# the fat JAR container when you only need a database for local development.
+
+services:
+  app:
+    profiles:
+      - containerized
+    build:
+      context: .
+    cap_drop:
+      - ALL
+    command:
+      - "export SPRING_DATASOURCE_PASSWORD=$$(cat /run/secrets/postgres_password) && exec java -jar /app/app.jar"
+    container_name: nearby-birds-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: "1G"
+        reservations:
+          memory: "512M"
+    entrypoint:
+      - /bin/sh
+      - -c
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/nearby_birds
+      SPRING_DATASOURCE_USERNAME: birds
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://127.0.0.1:8080/actuator/health/readiness | grep -q UP || exit 1",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    logging:
+      driver: json-file
+      options:
+        max-file: "3"
+        max-size: "10m"
+    networks:
+      - backend
+    ports:
+      - "127.0.0.1:8080:8080"
+    read_only: true
+    restart: unless-stopped
+    secrets:
+      - postgres_password
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp
+      - /var/tmp
+
+  postgres:
+    # The official image entrypoint chowns/chmods PGDATA and prepares /var/run/postgresql.
+    # cap_drop: ALL alone removes CAP_CHOWN (and related caps), so init loops with EPERM.
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    container_name: nearby-birds-db
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: "1G"
+        reservations:
+          memory: "512M"
+    environment:
+      POSTGRES_DB: nearby_birds
+      POSTGRES_USER: birds
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U birds -d nearby_birds"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    image: postgis/postgis:16-3.4
+    logging:
+      driver: json-file
+      options:
+        max-file: "3"
+        max-size: "10m"
+    networks:
+      - backend
+    ports:
+      - "127.0.0.1:5432:5432"
+    read_only: true
+    restart: unless-stopped
+    secrets:
+      - postgres_password
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp
+      - /var/run/postgresql
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  pgdata:
+
+secrets:
+  postgres_password:
+    file: ./secrets/postgres_password

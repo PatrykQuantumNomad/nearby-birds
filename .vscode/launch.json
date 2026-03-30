@@ -1,0 +1,22 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Launch Nearby Birds (Spring Boot)",
+            "request": "launch",
+            "mainClass": "com.nearbybirds.NearbyBirdsApplicationKt",
+            "projectName": "nearby-birds",
+            "cwd": "${workspaceFolder}",
+            "shortenCommandLine": "argfile",
+            "console": "integratedTerminal"
+        },
+        {
+            "type": "java",
+            "name": "Attach to JVM (port 5005)",
+            "request": "attach",
+            "hostName": "localhost",
+            "port": 5005
+        }
+    ]
+}
