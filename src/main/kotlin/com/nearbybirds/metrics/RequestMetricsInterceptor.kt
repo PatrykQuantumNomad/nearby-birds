@@ -1,6 +1,7 @@
 package com.nearbybirds.metrics
 
 import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.Timer
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.MDC
@@ -33,6 +34,17 @@ class RequestMetricsInterceptor(
     ) {
         val status = response.status.toString()
         meterRegistry.counter("http.server.requests.status", "status", status).increment()
+
+        val startTime = request.getAttribute("startTime") as? Long
+        if (startTime != null) {
+            val duration = System.nanoTime() - startTime
+            Timer.builder("http.server.requests.duration")
+                .tag("status", status)
+                .tag("method", request.method)
+                .tag("uri", request.requestURI)
+                .register(meterRegistry)
+                .record(duration, java.util.concurrent.TimeUnit.NANOSECONDS)
+        }
 
         if (ex != null) {
             meterRegistry.counter("nearby.search.requests", "status", "error").increment()
